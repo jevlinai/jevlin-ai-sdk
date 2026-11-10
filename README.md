@@ -81,6 +81,7 @@ A search from this package is billed at list price from your account's credit: s
 ## Links
 
 - [AI SDK integration guide](https://docs.jevlin.ai/integrations/ai-sdk)
+- [Web search router vs SuperSearch](https://jevlin.ai/web-search-router/): asking every engine against routing each query to one, measured on 485 questions
 - [Request options](https://docs.jevlin.ai/use/request-options)
 - [Jevlin for coding agents](https://docs.jevlin.ai/quickstart): Claude Code, Cursor, Codex, opencode, Pi and Hermes
 
