@@ -17,10 +17,15 @@ const routerAnswer = {
     { url: 'https://example.com/b', title: 'B', published: null, excerpt: 'b', found_by: [{ provider: 'serper', rank: 1 }], votes: 1 },
     { title: 'no url, dropped' },
   ],
-  indexes: [
-    { provider: 'exa', status: 'ok', results: 8 },
-    { provider: 'tinyfish', status: 'timeout' },
-  ],
+  indexes: {
+    selected: 2,
+    ok: 1,
+    pending: 0,
+    by_provider: [
+      { provider: 'exa', status: 'ok', results: 8, latency_ms: 700 },
+      { provider: 'tinyfish', status: 'timeout' },
+    ],
+  },
   usage: { billing: 'credit', cost_micros: 15000 },
 };
 
@@ -55,6 +60,7 @@ describe('superSearch', () => {
       query: 'postgres uuidv7',
       view: 'merged',
       max_results: 5,
+      merged_limit: 5,
       tier: 'fast',
       recency: 'month',
       domain_filter: ['postgresql.org'],
@@ -89,7 +95,7 @@ describe('superSearch', () => {
     const { f, calls } = fakeFetch();
     const t = superSearch({ apiKey: 'sr-test', fetch: f });
     await t.execute!({ query: 'q', tier: 'max' } as never, opts);
-    expect(JSON.parse(String(calls[0]!.init.body))).toEqual({ query: 'q', view: 'merged', max_results: 8 });
+    expect(JSON.parse(String(calls[0]!.init.body))).toEqual({ query: 'q', view: 'merged', max_results: 8, merged_limit: 8 });
   });
 
   it('lets the model choose the tier when asked to', async () => {

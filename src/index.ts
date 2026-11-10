@@ -107,7 +107,7 @@ type RouterMerged = {
 type RouterResponse = {
   request_id?: string;
   merged?: RouterMerged[];
-  indexes?: { provider?: string; status?: string; results?: number }[];
+  indexes?: { by_provider?: { provider?: string; status?: string; results?: number }[] };
   usage?: { billing?: string; cost_micros?: number };
 };
 
@@ -143,7 +143,9 @@ export function superSearch(config: SuperSearchConfig = {}) {
       const body: Record<string, unknown> = {
         query: input.query,
         view: 'merged',
+        // max_results is what each engine is asked for; merged_limit is the merged list's own window.
         max_results: clamp(config.maxResults ?? 8, 1, 25),
+        merged_limit: clamp(config.maxResults ?? 8, 1, 25),
       };
       if (tier) body.tier = tier;
       if (input.recency) body.recency = input.recency;
@@ -196,7 +198,7 @@ export function superSearch(config: SuperSearchConfig = {}) {
       const out: SuperSearchOutput = {
         query: input.query,
         results,
-        engines: (data.indexes ?? []).map(i => ({
+        engines: (Array.isArray(data.indexes?.by_provider) ? data.indexes.by_provider : []).map(i => ({
           name: i.provider ?? 'unknown',
           status: i.status ?? 'unknown',
           ...(typeof i.results === 'number' ? { results: i.results } : {}),
