@@ -1,0 +1,54 @@
+name: release
+# A tag vX.Y.Z publishes the version already committed in package.json.
+# No stored npm token: npm trusted publishing mints a short-lived credential
+# from this job's OIDC token when the repository, this workflow file and the
+# `release` environment match the trusted-publisher record on the package.
+# The first version is published by hand, because that record can only be
+# created on a package that already exists.
+on:
+  push:
+    tags: ["v*.*.*"]
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: The tag is the committed version
+        run: |
+          want="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$want" ]; then
+            echo "tag $GITHUB_REF_NAME does not match package.json ($want)"; exit 1
+          fi
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Already published?
+        id: registry
+        run: |
+          v="$(node -p "require('./package.json').version")"
+          if npm view "@jevlinsearch/ai-sdk@$v" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+      # Trusted publishing and --provenance need npm >= 11.5.1.
+      - if: steps.registry.outputs.published == 'false'
+        run: npm install -g npm@12.0.2
+      # --ignore-scripts: nothing from the package runs while the credential is live.
+      # The build above already produced dist/.
+      - name: npm publish
+        if: steps.registry.outputs.published == 'false'
+        run: npm publish --access public --ignore-scripts --provenance
